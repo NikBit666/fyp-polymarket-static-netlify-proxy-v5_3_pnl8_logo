@@ -13,15 +13,18 @@ class AppService {
       pnl: null,
       markets: [],
       recs: [],
-      live: false
+      live: false,
+      isDemo: false
     }
     
     this.elements = {}
   }
 
   initialize() {
+    console.log('🚀 Initializing FYP for Polymarket app...');
     this.bindElements()
     this.bindEvents()
+    console.log('✅ App initialized successfully');
   }
 
   bindElements() {
@@ -64,6 +67,8 @@ class AppService {
     const addr = this.elements.walletInput?.value?.trim() || ''
     const demo = this.elements.mockToggle?.checked || false
 
+    console.log(`🎯 Starting feed generation - Demo: ${demo}, Address: ${addr}`);
+
     this.elements.inputError?.classList.add('hidden')
 
     if (!demo && !utils.isHexAddress(addr)) {
@@ -75,8 +80,10 @@ class AppService {
 
     try {
       let positions, activity, value, markets
+      this.state.isDemo = demo
 
       if (demo) {
+        console.log('📊 Using demo mode with sample data');
         [positions, activity, value, markets] = await Promise.all([
           apiService.getSamplePositions(),
           apiService.getSampleActivity(),
@@ -85,24 +92,28 @@ class AppService {
         ])
         this.state.wallet = '0xDEMO...'
       } else {
+        console.log('🔍 Fetching real data for wallet:', addr);
         this.state.wallet = addr
         
-        // 1) Always try activity first to find proxy
+        // Try to get activity first to find proxy
+        console.log('📈 Fetching activity data...');
         const activityTmp = await apiService.getActivity(addr, 1000)
         const res = apiService.resolveProxyFromActivity(activityTmp)
         
         let probeList = []
         if (res?.list?.length) probeList = res.list
-        // Put addr at front for completeness
         probeList = [addr, ...probeList.filter(x => x.toLowerCase() !== addr.toLowerCase())].slice(0, 6)
         
-        // 2) Probe candidates and pick the first with non-empty positions
+        console.log('🔍 Probing addresses for positions:', probeList);
+        
+        // Find the address with positions
         let foundProxy = null, foundPositions = null
         for (const cand of probeList) {
           const { n, raw } = await apiService.getPositionsCount(cand)
           if (n > 0) {
             foundProxy = cand
             foundPositions = raw
+            console.log(`✅ Found positions at address: ${cand} (${n} positions)`);
             break
           }
         }
@@ -115,37 +126,41 @@ class AppService {
         value = await apiService.getValue(this.state.proxy || addr)
         activity = activityTmp
         
+        console.log('📊 Fetching markets data...');
         markets = await apiService.getMarketsCandidate()
         
-        // Update diagnostics
         this.updateDiagnostics(this.state.proxy || addr, value, positions, activity, markets)
       }
 
-      // Extract features
+      console.log('🧠 Building user features...');
       const features = rankerService.buildUserFeatures(positions, activity)
       this.state.features = features
 
-      // Update profile UI
+      console.log('👤 Updating profile UI...');
       this.updateProfile(value, features, positions, activity)
 
-      // Rank markets
+      // Process and rank markets
+      console.log('🎯 Processing and ranking markets...');
       const raw = (markets?.data || markets || [])
       
-      // Normalize tags like original
+      // Normalize tags
       raw.forEach(m => { 
         m.tags = this.normTags(m.tags) 
       })
+      
       this.state.markets = raw.filter(m => m?.endDate && m?.question)
+      console.log(`📈 Found ${this.state.markets.length} valid markets`);
       
       const scored = rankerService.scoreMarkets(this.state.markets, features)
       this.state.recs = scored.slice(0, 24)
+      console.log(`🏆 Generated ${this.state.recs.length} recommendations`);
 
-      // Render feed
       this.renderFeed()
-
       this.clearStatus()
+      
+      console.log('✅ Feed generation completed successfully');
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('❌ Error fetching data:', error)
       this.setStatus('error', 'Failed to fetch data. Try Demo mode.')
     }
   }
@@ -160,11 +175,10 @@ class AppService {
   }
 
   updateDiagnostics(addr, value, positions, activity, markets) {
-    // Show diagnostic information
     const diagBox = document.getElementById('diagBox')
     if (diagBox) diagBox.classList.remove('hidden')
     
-    const valueUrl = `${apiService.DATA_BASE}/value?user=${encodeURIComponent(addr)}`
+    const valueUrl = `/pdata/value?user=${encodeURIComponent(addr)}`
     const elUrl = document.getElementById('diagValueUrl')
     if (elUrl) elUrl.textContent = valueUrl
     
@@ -219,9 +233,13 @@ class AppService {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
       
-      topCats.forEach(([cat, count]) => {
-        uiService.createChip(this.elements.topCats, `${cat} (${count})`)
-      })
+      if (topCats.length === 0) {
+        uiService.createChip(this.elements.topCats, 'No categories yet')
+      } else {
+        topCats.forEach(([cat, count]) => {
+          uiService.createChip(this.elements.topCats, `${cat} (${count})`)
+        })
+      }
     }
 
     // Top tags
@@ -231,9 +249,13 @@ class AppService {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
       
-      topTags.forEach(([tag, count]) => {
-        uiService.createChip(this.elements.topTags, `#${tag}`)
-      })
+      if (topTags.length === 0) {
+        uiService.createChip(this.elements.topTags, 'No tags yet')
+      } else {
+        topTags.forEach(([tag, count]) => {
+          uiService.createChip(this.elements.topTags, `#${tag}`)
+        })
+      }
     }
 
     // History note
@@ -245,7 +267,8 @@ class AppService {
 
     // Match note
     if (this.elements.matchNote) {
-      this.elements.matchNote.textContent = 'Using sample data for demonstration'
+      const mode = this.state.isDemo ? 'demo' : 'live'
+      this.elements.matchNote.textContent = `Using ${mode} data`
     }
   }
 
@@ -328,5 +351,10 @@ class AppService {
 export const appService = new AppService()
 
 export function initializeApp() {
-  appService.initialize()
+  // Wrap in try-catch to prevent any initialization errors
+  try {
+    appService.initialize()
+  } catch (error) {
+    console.error('Failed to initialize app:', error)
+  }
 }

@@ -31,8 +31,8 @@ export function WalletInput() {
       </div>
       
       <p class="text-xs text-muted mt-4">
-        <strong>💡 Tip:</strong> This demo uses Netlify redirects to proxy Polymarket APIs and avoid CORS issues.
-        For production, you'd need a backend proxy server.
+        <strong>💡 Tip:</strong> Try Demo mode for a quick preview, or enter a real wallet address to see personalized recommendations.
+        The app will automatically fall back to sample data if APIs are unavailable.
       </p>
     </div>
   `

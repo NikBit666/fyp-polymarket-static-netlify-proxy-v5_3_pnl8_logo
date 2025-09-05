@@ -4,7 +4,9 @@
   "description": "This is a **drag-and-drop** static site you can deploy on **Netlify** (or open locally) with no installs.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "keywords": [],
   "author": "",

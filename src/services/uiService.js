@@ -10,11 +10,17 @@ class UiService {
   }
 
   createMarketCard(market, score, reasons) {
+    console.log('🎨 Creating card for market:', market.question)
+    
     const card = document.createElement('div')
     card.className = 'card market-card'
     
     const days = utils.daysTo(market.endDate)
     const mid = ((Number(market.bestBid) || 0) + (Number(market.bestAsk) || 0)) / 2
+    
+    // Ensure we have tags array
+    const tags = Array.isArray(market.tags) ? market.tags : []
+    console.log('🏷️ Market tags:', tags)
     
     card.innerHTML = `
       <div class="flex justify-between items-start gap-4 mb-4">
@@ -26,7 +32,7 @@ class UiService {
             ${market.question}
           </a>
           <div class="flex gap-2" style="flex-wrap: wrap;">
-            ${(market.tags || []).slice(0, 5).map(tag => 
+            ${tags.slice(0, 5).map(tag => 
               `<span class="chip">#${tag}</span>`
             ).join('')}
           </div>
@@ -66,3 +72,5 @@ class UiService {
 }
 
 export const uiService = new UiService()
+
+export { uiService }

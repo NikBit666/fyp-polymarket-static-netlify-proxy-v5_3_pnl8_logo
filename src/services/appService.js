@@ -84,6 +84,7 @@ class AppService {
         value = await apiService.getSampleValue()
         markets = await apiService.getSampleMarkets()
         this.state.wallet = '0xDEMO...'
+        console.log('📋 Using demo data')
       } else {
         // Real API calls with fallback to sample data
         this.state.wallet = addr
@@ -119,7 +120,11 @@ class AppService {
         positions = foundPositions || await apiService.getPositions(targetAddr)
         value = await apiService.getValue(targetAddr)
         activity = activityTmp
+        
+        // Get real markets data
+        console.log('🔄 Fetching real markets data...')
         markets = await apiService.getMarketsCandidate()
+        console.log('📊 Markets response:', markets)
         
         // Update diagnostics
         this.updateDiagnostics(targetAddr, value, positions, activity)
@@ -133,18 +138,31 @@ class AppService {
       }
 
       // Extract features
+      console.log('🧠 Building user features from positions/activity...')
       const features = rankerService.buildUserFeatures(positions, activity)
       this.state.features = features
+      console.log('✨ User features:', features)
 
       // Update profile UI
       this.updateProfile(value, features, positions, activity)
 
       // Rank markets
       const marketData = markets?.data || markets || []
-      console.log('🎯 Ranking', marketData.length, 'markets with user features')
+      console.log('🎯 Processing markets data:', marketData)
+      console.log('📈 Market count:', marketData.length)
+      
+      // Ensure markets have proper structure
+      const validMarkets = marketData.filter(m => m && m.question && m.endDate)
+      console.log('✅ Valid markets for ranking:', validMarkets.length)
+      
       const scored = rankerService.scoreMarkets(marketData, features)
       this.state.recs = scored.slice(0, 24)
-      console.log('📈 Generated', this.state.recs.length, 'recommendations')
+      console.log('🏆 Generated recommendations:', this.state.recs.length)
+      console.log('🎯 Sample recommendations:', this.state.recs.slice(0, 3).map(r => ({
+        question: r.market.question,
+        score: r.score,
+        category: r.market.category
+      })))
 
       // Render feed
       this.renderFeed()

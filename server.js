@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.static('.'));
 
 // Handle SPA routing - serve index.html for all non-API routes
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 

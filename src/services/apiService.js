@@ -1,90 +1,167 @@
+// Real Polymarket API client with CORS handling
 class ApiService {
-  async getSampleData() {
-    try {
-      const [positions, activity, value, markets] = await Promise.all([
-        fetch('./data/sample_positions.json').then(r => r.json()),
-        fetch('./data/sample_activity.json').then(r => r.json()),
-        fetch('./data/sample_value.json').then(r => r.json()),
-        fetch('./data/sample_markets.json').then(r => r.json())
-      ])
+  constructor() {
+    // Try direct API calls first, fallback to sample data if CORS blocks
+    this.GAMMA_BASE = 'https://gamma-api.polymarket.com'
+    this.DATA_BASE = 'https://data-api.polymarket.com'
+  }
 
-      return { positions, activity, value, markets }
+  async getMarketsCandidate() {
+    try {
+      const url = `${this.GAMMA_BASE}/markets?closed=false&limit=1000&order=-volume24hr&include_tag=true`
+      const response = await fetch(url, { 
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+      
+      if (!response.ok) throw new Error('Gamma markets failed')
+      return await response.json()
     } catch (error) {
-      console.error('Error loading sample data:', error)
-      return this.getFallbackData()
+      console.warn('Live API failed, using sample data:', error.message)
+      return this.getSampleMarkets()
     }
   }
 
-  getFallbackData() {
-    return {
-      positions: {
-        data: [
-          {
-            wallet: "0xDEMO",
-            conditionId: "0xcondDEMO1",
-            outcomeIndex: 1,
-            size: 120,
-            avgPrice: 0.32,
-            currentValue: 150,
-            cashPnl: 30,
-            percentPnl: 0.25,
-            endDate: "2025-09-19T21:07:56.854455Z",
-            slug: "demo-market-1",
-            title: "Will BTC close above $70k this month?",
-            category: "Crypto",
-            tags: ["btc", "price", "monthly"]
-          }
-        ]
-      },
-      activity: {
-        data: [
-          {
-            type: "trade",
-            side: "BUY",
-            price: 0.32,
-            size: 120,
-            usdcSize: 38.4,
-            outcomeIndex: 1,
-            timestamp: "2025-08-26T21:07:56.855032Z",
-            marketEndDate: "2025-09-19T21:07:56.855047Z",
-            proxyWallet: "0xPROXYDEMO"
-          }
-        ]
-      },
-      value: { data: { total: 12456.78 } },
-      markets: {
-        data: [
-          {
-            conditionId: "0xMKT1",
-            question: "Will BTC be above $80k by Oct 31?",
-            slug: "btc-above-80k-oct-31",
-            category: "Crypto",
-            tags: ["btc", "price"],
-            endDate: "2025-10-25T21:07:56.855919Z",
-            bestBid: 0.27,
-            bestAsk: 0.29,
-            oneDayPriceChange: 0.02,
-            volume24hr: 45231,
-            liquidityNum: 75,
-            enableOrderBook: true
-          },
-          {
-            conditionId: "0xMKT2",
-            question: "Will Apple announce a foldable iPhone in 2025?",
-            slug: "apple-foldable-2025",
-            category: "Tech",
-            tags: ["apple", "hardware"],
-            endDate: "2026-01-03T21:07:56.855931Z",
-            bestBid: 0.14,
-            bestAsk: 0.16,
-            oneDayPriceChange: -0.01,
-            volume24hr: 11200,
-            liquidityNum: 40,
-            enableOrderBook: true
-          }
-        ]
-      }
+  async getPositions(addr) {
+    try {
+      const url = `${this.DATA_BASE}/positions?user=${addr}`
+      const response = await fetch(url, { 
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+      
+      if (!response.ok) throw new Error('Positions failed')
+      return await response.json()
+    } catch (error) {
+      console.warn('Live positions API failed, using sample data:', error.message)
+      return this.getSamplePositions()
     }
+  }
+
+  async getActivity(addr, limit = 1000) {
+    try {
+      const url = `${this.DATA_BASE}/activity?user=${addr}&limit=${limit}`
+      const response = await fetch(url, { 
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+      
+      if (!response.ok) throw new Error('Activity failed')
+      return await response.json()
+    } catch (error) {
+      console.warn('Live activity API failed, using sample data:', error.message)
+      return this.getSampleActivity()
+    }
+  }
+
+  async getValue(addr) {
+    try {
+      const url = `${this.DATA_BASE}/value?user=${addr}`
+      const response = await fetch(url, { 
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+      
+      if (!response.ok) throw new Error('Value failed')
+      return await response.json()
+    } catch (error) {
+      console.warn('Live value API failed, using sample data:', error.message)
+      return this.getSampleValue()
+    }
+  }
+
+  resolveProxyFromActivity(activity) {
+    const candidates = new Set()
+    try {
+      const arr = activity?.data || activity || []
+      for (const ev of arr) {
+        // Common fields where proxy addresses might be found
+        if (ev.proxyWallet) candidates.add(ev.proxyWallet)
+        if (ev?.walletInfo?.proxyWallet) candidates.add(ev.walletInfo.proxyWallet)
+        if (ev?.userProxy) candidates.add(ev.userProxy)
+        if (ev?.account?.proxy) candidates.add(ev.account.proxy)
+        if (ev?.account?.address) candidates.add(ev.account.address)
+        if (ev?.maker?.proxy) candidates.add(ev.maker.proxy)
+        if (ev?.taker?.proxy) candidates.add(ev.taker.proxy)
+        if (ev?.maker) candidates.add(ev.maker)
+        if (ev?.taker) candidates.add(ev.taker)
+        if (ev?.wallet) candidates.add(ev.wallet)
+        if (ev?.address) candidates.add(ev.address)
+        
+        // Scan nested objects for 0x fields
+        for (const k in ev) {
+          const v = ev[k]
+          if (typeof v === 'string' && v.startsWith('0x') && v.length === 42) {
+            candidates.add(v)
+          }
+          if (v && typeof v === 'object') {
+            for (const kk in v) {
+              const vv = v[kk]
+              if (typeof vv === 'string' && vv.startsWith('0x') && vv.length === 42) {
+                candidates.add(vv)
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error parsing activity for proxy detection:', e)
+    }
+    
+    // Return deduplicated list and best guess
+    const list = [...candidates].filter(x => /^0x[0-9a-fA-F]{40}$/.test(x))
+    return { list, bestGuess: list[0] || null }
+  }
+
+  async getPositionsCount(addr) {
+    try {
+      const positions = await this.getPositions(addr)
+      const count = positions?.data?.length ?? positions?.length ?? 0
+      return { count, raw: positions }
+    } catch (error) {
+      return { count: 0, raw: null }
+    }
+  }
+
+  // Fallback sample data methods
+  async getSampleMarkets() {
+    const response = await fetch('./data/sample_markets.json')
+    return response.json()
+  }
+
+  async getSamplePositions() {
+    const response = await fetch('./data/sample_positions.json')
+    return response.json()
+  }
+
+  async getSampleActivity() {
+    const response = await fetch('./data/sample_activity.json')
+    return response.json()
+  }
+
+  async getSampleValue() {
+    const response = await fetch('./data/sample_value.json')
+    return response.json()
+  }
+
+  marketLink(slugOrCondition) {
+    if (!slugOrCondition) return 'https://polymarket.com/'
+    if (String(slugOrCondition).startsWith('0x')) {
+      return `https://polymarket.com/market/${slugOrCondition}`
+    }
+    return `https://polymarket.com/event/${slugOrCondition}`
   }
 }
 

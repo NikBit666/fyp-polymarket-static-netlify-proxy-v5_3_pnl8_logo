@@ -78,22 +78,51 @@ class AppService {
       let positions, activity, value, markets
 
       if (demo) {
-        // Use sample data
-        const sampleData = await apiService.getSampleData()
-        positions = sampleData.positions
-        activity = sampleData.activity
-        value = sampleData.value
-        markets = sampleData.markets
+        // Use sample data for demo
+        positions = await apiService.getSamplePositions()
+        activity = await apiService.getSampleActivity()
+        value = await apiService.getSampleValue()
+        markets = await apiService.getSampleMarkets()
         this.state.wallet = '0xDEMO...'
       } else {
-        // This would normally fetch from APIs, but we'll use sample data for now
-        // since we can't make external API calls without CORS issues
-        const sampleData = await apiService.getSampleData()
-        positions = sampleData.positions
-        activity = sampleData.activity
-        value = sampleData.value
-        markets = sampleData.markets
+        // Real API calls with fallback to sample data
         this.state.wallet = addr
+        
+        // 1) Try to get activity first to find proxy addresses
+        const activityTmp = await apiService.getActivity(addr, 1000)
+        const proxyResult = apiService.resolveProxyFromActivity(activityTmp)
+        
+        let probeList = [addr]
+        if (proxyResult?.list?.length) {
+          probeList = [addr, ...proxyResult.list.filter(x => 
+            x.toLowerCase() !== addr.toLowerCase()
+          )].slice(0, 6)
+        }
+        
+        // 2) Probe candidates to find one with positions
+        let foundProxy = null, foundPositions = null
+        for (const candidate of probeList) {
+          const { count, raw } = await apiService.getPositionsCount(candidate)
+          if (count > 0) {
+            foundProxy = candidate
+            foundPositions = raw
+            break
+          }
+        }
+        
+        if (foundProxy && foundProxy.toLowerCase() !== addr.toLowerCase()) {
+          this.state.proxy = foundProxy
+        }
+        
+        // 3) Get all data using the best address
+        const targetAddr = this.state.proxy || addr
+        positions = foundPositions || await apiService.getPositions(targetAddr)
+        value = await apiService.getValue(targetAddr)
+        activity = activityTmp
+        markets = await apiService.getMarketsCandidate()
+        
+        // Update diagnostics
+        this.updateDiagnostics(targetAddr, value, positions, activity)
       }
 
       // Extract features
@@ -115,6 +144,34 @@ class AppService {
       console.error('Error fetching data:', error)
       this.setStatus('error', 'Failed to fetch data. Try Demo mode.')
     }
+  }
+
+  updateDiagnostics(addr, value, positions, activity) {
+    // Show diagnostic information
+    const diagBox = document.getElementById('diagBox')
+    if (diagBox) diagBox.classList.remove('hidden')
+    
+    const valueUrl = `https://data-api.polymarket.com/value?user=${encodeURIComponent(addr)}`
+    const elUrl = document.getElementById('diagValueUrl')
+    if (elUrl) elUrl.textContent = valueUrl
+    
+    const elVOk = document.getElementById('diagValueOk')
+    if (elVOk) elVOk.textContent = value ? 'yes' : 'no'
+    
+    const elPOk = document.getElementById('diagPosOk')
+    if (elPOk) {
+      const posCount = positions?.data?.length ?? positions?.length ?? 0
+      elPOk.textContent = posCount > 0 ? 'yes' : 'no'
+    }
+    
+    const elAOk = document.getElementById('diagActOk')
+    if (elAOk) {
+      const actCount = activity?.data?.length ?? activity?.length ?? 0
+      elAOk.textContent = actCount > 0 ? 'yes' : 'no'
+    }
+    
+    const elVRaw = document.getElementById('diagValueRaw')
+    if (elVRaw) elVRaw.textContent = JSON.stringify(value, null, 2)
   }
 
   updateProfile(value, features, positions, activity) {

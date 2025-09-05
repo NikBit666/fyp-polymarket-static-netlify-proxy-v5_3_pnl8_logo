@@ -31,7 +31,8 @@ export function WalletInput() {
       </div>
       
       <p class="text-xs text-muted mt-4">
-        Tip: If you trade via a proxy wallet, entering either your EOA or the proxy should work.
+        Real API: Enter any Polymarket wallet address to fetch live data. 
+        If CORS blocks the API, it will fallback to sample data automatically.
       </p>
     </div>
   `

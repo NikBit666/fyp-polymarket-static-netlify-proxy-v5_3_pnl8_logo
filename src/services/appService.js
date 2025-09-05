@@ -63,7 +63,6 @@ class AppService {
   async onSeeFeed() {
     const addr = this.elements.walletInput?.value?.trim() || ''
     const demo = this.elements.mockToggle?.checked || false
-    const live = this.elements.liveToggle?.checked || false
 
     this.elements.inputError?.classList.add('hidden')
 
@@ -79,33 +78,32 @@ class AppService {
 
       if (demo) {
         // Use sample data for demo
-        positions = await apiService.getSamplePositions()
-        activity = await apiService.getSampleActivity()
-        value = await apiService.getSampleValue()
-        markets = await apiService.getSampleMarkets()
+        [positions, activity, value, markets] = await Promise.all([
+          apiService.getSamplePositions(),
+          apiService.getSampleActivity(),
+          apiService.getSampleValue(),
+          apiService.getSampleMarkets(),
+        ])
         this.state.wallet = '0xDEMO...'
-        console.log('📋 Using demo data')
       } else {
-        // Real API calls with fallback to sample data
+        // Real API calls - simplified like original working version
         this.state.wallet = addr
         
-        // 1) Try to get activity first to find proxy addresses
+        // 1) Always try activity first to find proxy
         const activityTmp = await apiService.getActivity(addr, 1000)
-        const proxyResult = apiService.resolveProxyFromActivity(activityTmp)
+        const res = apiService.resolveProxyFromActivity(activityTmp)
         
-        let probeList = [addr]
-        if (proxyResult?.list?.length) {
-          probeList = [addr, ...proxyResult.list.filter(x => 
-            x.toLowerCase() !== addr.toLowerCase()
-          )].slice(0, 6)
-        }
+        let probeList = []
+        if (res?.list?.length) probeList = res.list
+        // Put addr at front for completeness
+        probeList = [addr, ...probeList.filter(x => x.toLowerCase() !== addr.toLowerCase())].slice(0, 6)
         
-        // 2) Probe candidates to find one with positions
+        // 2) Probe candidates and pick the first with non-empty positions
         let foundProxy = null, foundPositions = null
-        for (const candidate of probeList) {
-          const { count, raw } = await apiService.getPositionsCount(candidate)
+        for (const cand of probeList) {
+          const { count, raw } = await apiService.getPositionsCount(cand)
           if (count > 0) {
-            foundProxy = candidate
+            foundProxy = cand
             foundPositions = raw
             break
           }
@@ -115,54 +113,33 @@ class AppService {
           this.state.proxy = foundProxy
         }
         
-        // 3) Get all data using the best address
-        const targetAddr = this.state.proxy || addr
-        positions = foundPositions || await apiService.getPositions(targetAddr)
-        value = await apiService.getValue(targetAddr)
+        positions = foundPositions || await apiService.getPositions(this.state.proxy || addr)
+        value = await apiService.getValue(this.state.proxy || addr)
         activity = activityTmp
         
-        // Get real markets data
-        console.log('🔄 Fetching real markets data...')
         markets = await apiService.getMarketsCandidate()
-        console.log('📊 Markets response:', markets)
         
         // Update diagnostics
-        this.updateDiagnostics(targetAddr, value, positions, activity)
-        
-        // Update markets diagnostics
-        const diagMarketsOk = document.getElementById('diagMarketsOk')
-        if (diagMarketsOk) {
-          const marketCount = markets?.data?.length || markets?.length || 0
-          diagMarketsOk.textContent = marketCount > 0 ? `yes (${marketCount})` : 'no'
-        }
+        this.updateDiagnostics(this.state.proxy || addr, value, positions, activity, markets)
       }
 
       // Extract features
-      console.log('🧠 Building user features from positions/activity...')
       const features = rankerService.buildUserFeatures(positions, activity)
       this.state.features = features
-      console.log('✨ User features:', features)
 
       // Update profile UI
       this.updateProfile(value, features, positions, activity)
 
       // Rank markets
-      const marketData = markets?.data || markets || []
-      console.log('🎯 Processing markets data:', marketData)
-      console.log('📈 Market count:', marketData.length)
+      const raw = (markets?.data || markets || [])
+      // Normalize tags like original
+      raw.forEach(m => { 
+        m.tags = this.normTags(m.tags) 
+      })
+      this.state.markets = raw.filter(m => m?.endDate && m?.question)
       
-      // Ensure markets have proper structure
-      const validMarkets = marketData.filter(m => m && m.question && m.endDate)
-      console.log('✅ Valid markets for ranking:', validMarkets.length)
-      
-      const scored = rankerService.scoreMarkets(marketData, features)
+      const scored = rankerService.scoreMarkets(this.state.markets, features)
       this.state.recs = scored.slice(0, 24)
-      console.log('🏆 Generated recommendations:', this.state.recs.length)
-      console.log('🎯 Sample recommendations:', this.state.recs.slice(0, 3).map(r => ({
-        question: r.market.question,
-        score: r.score,
-        category: r.market.category
-      })))
 
       // Render feed
       this.renderFeed()
@@ -174,12 +151,21 @@ class AppService {
     }
   }
 
-  updateDiagnostics(addr, value, positions, activity) {
+  normTags(tags) {
+    if (!tags) return []
+    return tags.map(t => {
+      if (typeof t === 'string') return t
+      if (!t) return ''
+      return t.name || t.tag || t.slug || t.id || String(t)
+    }).filter(Boolean)
+  }
+
+  updateDiagnostics(addr, value, positions, activity, markets) {
     // Show diagnostic information
     const diagBox = document.getElementById('diagBox')
     if (diagBox) diagBox.classList.remove('hidden')
     
-    const valueUrl = `https://data-api.polymarket.com/value?user=${encodeURIComponent(addr)}`
+    const valueUrl = `${apiService.DATA_BASE}/value?user=${encodeURIComponent(addr)}`
     const elUrl = document.getElementById('diagValueUrl')
     if (elUrl) elUrl.textContent = valueUrl
     
@@ -196,6 +182,12 @@ class AppService {
     if (elAOk) {
       const actCount = activity?.data?.length ?? activity?.length ?? 0
       elAOk.textContent = actCount > 0 ? 'yes' : 'no'
+    }
+    
+    const elMOk = document.getElementById('diagMarketsOk')
+    if (elMOk) {
+      const marketCount = markets?.data?.length || markets?.length || 0
+      elMOk.textContent = marketCount > 0 ? `yes (${marketCount})` : 'no'
     }
     
     const elVRaw = document.getElementById('diagValueRaw')

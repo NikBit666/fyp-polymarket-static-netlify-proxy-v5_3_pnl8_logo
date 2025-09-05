@@ -1,116 +1,93 @@
-// Real Polymarket API client with CORS handling
+// Restored from working GitHub version - simplified API client
 class ApiService {
   constructor() {
-    // Try direct API calls first, fallback to sample data if CORS blocks
+    // Use direct API calls like the original working version
     this.GAMMA_BASE = 'https://gamma-api.polymarket.com'
     this.DATA_BASE = 'https://data-api.polymarket.com'
   }
 
   async getMarketsCandidate() {
     try {
-      console.log('🔄 Attempting to fetch markets from Polymarket API...')
       const url = `${this.GAMMA_BASE}/markets?closed=false&limit=100&order=-volume24hr`
-      console.log('📡 URL:', url)
       const response = await fetch(url, { 
-        mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Accept': 'application/json',
+          'Accept': 'application/json'
         }
       })
       
       if (!response.ok) {
-        console.warn('❌ API Response not OK:', response.status, response.statusText)
-        throw new Error(`Gamma markets failed: ${response.status}`)
+        throw new Error(`Markets API failed: ${response.status}`)
       }
-      console.log('✅ Markets API successful!')
+      
       const data = await response.json()
-      console.log('📊 Markets data received:', data?.data?.length || 0, 'markets')
+      console.log('✅ Real markets fetched:', data?.data?.length || 0)
       return data
     } catch (error) {
-      console.warn('❌ Live Markets API failed, using sample data:', error.message)
-      console.warn('🔍 This is likely due to CORS restrictions in browser environment')
+      console.warn('❌ Markets API failed, using sample:', error.message)
       return this.getSampleMarkets()
     }
   }
 
   async getPositions(addr) {
     try {
-      console.log('🔄 Attempting to fetch positions for:', addr)
       const url = `${this.DATA_BASE}/positions?user=${addr}`
-      console.log('📡 URL:', url)
       const response = await fetch(url, { 
-        mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; FYP-Demo/1.0)',
+          'Accept': 'application/json'
         }
       })
       
       if (!response.ok) {
-        console.warn('❌ Positions API Response not OK:', response.status, response.statusText)
         throw new Error(`Positions failed: ${response.status}`)
       }
-      console.log('✅ Positions API successful!')
+      
       return await response.json()
     } catch (error) {
-      console.warn('❌ Live Positions API failed, using sample data:', error.message)
-      console.warn('🔍 This is likely due to CORS restrictions in browser environment')
+      console.warn('❌ Positions API failed:', error.message)
       return this.getSamplePositions()
     }
   }
 
   async getActivity(addr, limit = 1000) {
     try {
-      console.log('🔄 Attempting to fetch activity for:', addr)
       const url = `${this.DATA_BASE}/activity?user=${addr}&limit=${limit}`
-      console.log('📡 URL:', url)
       const response = await fetch(url, { 
-        mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; FYP-Demo/1.0)',
+          'Accept': 'application/json'
         }
       })
       
       if (!response.ok) {
-        console.warn('❌ Activity API Response not OK:', response.status, response.statusText)
         throw new Error(`Activity failed: ${response.status}`)
       }
-      console.log('✅ Activity API successful!')
+      
       return await response.json()
     } catch (error) {
-      console.warn('❌ Live Activity API failed, using sample data:', error.message)
-      console.warn('🔍 This is likely due to CORS restrictions in browser environment')
+      console.warn('❌ Activity API failed:', error.message)
       return this.getSampleActivity()
     }
   }
 
   async getValue(addr) {
     try {
-      console.log('🔄 Attempting to fetch portfolio value for:', addr)
       const url = `${this.DATA_BASE}/value?user=${addr}`
-      console.log('📡 URL:', url)
       const response = await fetch(url, { 
-        mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; FYP-Demo/1.0)',
+          'Accept': 'application/json'
         }
       })
       
       if (!response.ok) {
-        console.warn('❌ Value API Response not OK:', response.status, response.statusText)
         throw new Error(`Value failed: ${response.status}`)
       }
-      console.log('✅ Value API successful!')
+      
       return await response.json()
     } catch (error) {
-      console.warn('❌ Live Value API failed, using sample data:', error.message)
-      console.warn('🔍 This is likely due to CORS restrictions in browser environment')
+      console.warn('❌ Value API failed:', error.message)
       return this.getSampleValue()
     }
   }
@@ -168,7 +145,7 @@ class ApiService {
     }
   }
 
-  // Fallback sample data methods
+  // Sample data fallbacks
   async getSampleMarkets() {
     const response = await fetch('./data/sample_markets.json')
     return response.json()

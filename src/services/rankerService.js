@@ -86,15 +86,12 @@ class RankerService {
   }
 
   scoreMarkets(markets, features) {
-    console.log('🔍 Scoring markets:', markets.length)
-    console.log('📊 Sample market structure:', markets[0])
-    
     const scored = markets.map((market, index) => {
       const score = this.scoreMarket(market, features)
       const reasons = this.reasonsFor(market, features)
       
       // Add some randomness for demo purposes
-      const seed = this.hashSeed((features.wallet || 'demo') + '::fyp')
+      const seed = this.hashSeed('fyp')
       const randomness = ((seed ^ index) % 7) / 1000
       
       return {
@@ -104,9 +101,7 @@ class RankerService {
       }
     })
 
-    const sorted = scored.sort((a, b) => b.score - a.score)
-    console.log('🏅 Top scored market:', sorted[0]?.market?.question, 'Score:', sorted[0]?.score)
-    return sorted
+    return scored.sort((a, b) => b.score - a.score)
   }
 
   scoreMarket(market, features) {

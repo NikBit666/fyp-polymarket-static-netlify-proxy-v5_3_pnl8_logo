@@ -10,8 +10,6 @@ class UiService {
   }
 
   createMarketCard(market, score, reasons) {
-    console.log('🎨 Creating card for market:', market.question)
-    
     const card = document.createElement('div')
     card.className = 'card market-card'
     
@@ -20,7 +18,6 @@ class UiService {
     
     // Ensure we have tags array
     const tags = Array.isArray(market.tags) ? market.tags : []
-    console.log('🏷️ Market tags:', tags)
     
     card.innerHTML = `
       <div class="flex justify-between items-start gap-4 mb-4">

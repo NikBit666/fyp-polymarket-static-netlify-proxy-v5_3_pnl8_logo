@@ -31,8 +31,10 @@ export function WalletInput() {
       </div>
       
       <p class="text-xs text-muted mt-4">
-        Real API: Enter any Polymarket wallet address to fetch live data. 
-        If CORS blocks the API, it will fallback to sample data automatically.
+        <strong>⚠️ CORS Limitation:</strong> Browser security blocks direct API calls to Polymarket. 
+        Check browser console for API attempt details. Currently showing sample data for demo.
+        <br><br>
+        <strong>💡 For production:</strong> This would need a backend proxy server to bypass CORS restrictions.
       </p>
     </div>
   `

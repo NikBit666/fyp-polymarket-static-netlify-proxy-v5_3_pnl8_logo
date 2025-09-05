@@ -31,10 +31,8 @@ export function WalletInput() {
       </div>
       
       <p class="text-xs text-muted mt-4">
-        <strong>⚠️ CORS Notice:</strong> Browser security may block direct API calls to Polymarket. 
-        The app will attempt real API calls and fallback to sample data if blocked.
-        <br><br>
-        <strong>💡 Tip:</strong> Check browser console to see which data sources are being used.
+        <strong>💡 Tip:</strong> This demo uses Netlify redirects to proxy Polymarket APIs and avoid CORS issues.
+        For production, you'd need a backend proxy server.
       </p>
     </div>
   `

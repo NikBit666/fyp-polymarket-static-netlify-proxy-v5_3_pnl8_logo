@@ -123,6 +123,13 @@ class AppService {
         
         // Update diagnostics
         this.updateDiagnostics(targetAddr, value, positions, activity)
+        
+        // Update markets diagnostics
+        const diagMarketsOk = document.getElementById('diagMarketsOk')
+        if (diagMarketsOk) {
+          const marketCount = markets?.data?.length || markets?.length || 0
+          diagMarketsOk.textContent = marketCount > 0 ? `yes (${marketCount})` : 'no'
+        }
       }
 
       // Extract features
@@ -133,8 +140,11 @@ class AppService {
       this.updateProfile(value, features, positions, activity)
 
       // Rank markets
-      const scored = rankerService.scoreMarkets(markets.data || markets, features)
+      const marketData = markets?.data || markets || []
+      console.log('🎯 Ranking', marketData.length, 'markets with user features')
+      const scored = rankerService.scoreMarkets(marketData, features)
       this.state.recs = scored.slice(0, 24)
+      console.log('📈 Generated', this.state.recs.length, 'recommendations')
 
       // Render feed
       this.renderFeed()

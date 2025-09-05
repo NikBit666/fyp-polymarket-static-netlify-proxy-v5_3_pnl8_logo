@@ -9,14 +9,13 @@ class ApiService {
   async getMarketsCandidate() {
     try {
       console.log('🔄 Attempting to fetch markets from Polymarket API...')
-      const url = `${this.GAMMA_BASE}/markets?closed=false&limit=1000&order=-volume24hr&include_tag=true`
+      const url = `${this.GAMMA_BASE}/markets?closed=false&limit=100&order=-volume24hr`
       console.log('📡 URL:', url)
       const response = await fetch(url, { 
         mode: 'cors',
         credentials: 'omit',
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; FYP-Demo/1.0)',
         }
       })
       
@@ -25,7 +24,9 @@ class ApiService {
         throw new Error(`Gamma markets failed: ${response.status}`)
       }
       console.log('✅ Markets API successful!')
-      return await response.json()
+      const data = await response.json()
+      console.log('📊 Markets data received:', data?.data?.length || 0, 'markets')
+      return data
     } catch (error) {
       console.warn('❌ Live Markets API failed, using sample data:', error.message)
       console.warn('🔍 This is likely due to CORS restrictions in browser environment')

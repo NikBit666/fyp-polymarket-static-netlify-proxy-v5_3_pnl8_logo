@@ -42,6 +42,7 @@ export function ProfileCard() {
         <div>Value API: <span id="diagValueOk">—</span></div>
         <div>Positions API: <span id="diagPosOk">—</span></div>
         <div>Activity API: <span id="diagActOk">—</span></div>
+        <div>Markets API: <span id="diagMarketsOk">—</span></div>
         <div class="mt-2">
           <div>URL: <span id="diagValueUrl" style="word-break: break-all;">—</span></div>
         </div>

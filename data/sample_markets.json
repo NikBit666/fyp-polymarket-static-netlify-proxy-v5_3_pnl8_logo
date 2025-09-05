@@ -1,0 +1,89 @@
+{
+  "data": [
+    {
+      "conditionId": "0xMKT1",
+      "question": "Will BTC be above $80k by Oct 31?",
+      "slug": "btc-above-80k-oct-31",
+      "category": "Crypto",
+      "tags": [
+        "btc",
+        "price"
+      ],
+      "endDate": "2025-10-25T21:07:56.855919Z",
+      "bestBid": 0.27,
+      "bestAsk": 0.29,
+      "oneDayPriceChange": 0.02,
+      "volume24hr": 45231,
+      "liquidityNum": 75,
+      "enableOrderBook": true
+    },
+    {
+      "conditionId": "0xMKT2",
+      "question": "Will Apple announce a foldable iPhone in 2025?",
+      "slug": "apple-foldable-2025",
+      "category": "Tech",
+      "tags": [
+        "apple",
+        "hardware"
+      ],
+      "endDate": "2026-01-03T21:07:56.855931Z",
+      "bestBid": 0.14,
+      "bestAsk": 0.16,
+      "oneDayPriceChange": -0.01,
+      "volume24hr": 11200,
+      "liquidityNum": 40,
+      "enableOrderBook": true
+    },
+    {
+      "conditionId": "0xMKT3",
+      "question": "Will Team Y win the championship?",
+      "slug": "team-y-champ",
+      "category": "Sports",
+      "tags": [
+        "basketball",
+        "finals"
+      ],
+      "endDate": "2025-09-11T21:07:56.855935Z",
+      "bestBid": 0.48,
+      "bestAsk": 0.51,
+      "oneDayPriceChange": 0.03,
+      "volume24hr": 32100,
+      "liquidityNum": 65,
+      "enableOrderBook": true
+    },
+    {
+      "conditionId": "0xMKT4",
+      "question": "Will a major stablecoin pass a new US framework by Dec 31, 2025?",
+      "slug": "us-stablecoin-law-2025",
+      "category": "Politics",
+      "tags": [
+        "policy",
+        "stablecoins"
+      ],
+      "endDate": "2025-12-29T21:07:56.855938Z",
+      "bestBid": 0.22,
+      "bestAsk": 0.25,
+      "oneDayPriceChange": 0.0,
+      "volume24hr": 9800,
+      "liquidityNum": 30,
+      "enableOrderBook": true
+    },
+    {
+      "conditionId": "0xMKT5",
+      "question": "Will a blockbuster cross $1B worldwide this year?",
+      "slug": "billion-box-office",
+      "category": "Entertainment",
+      "tags": [
+        "movies",
+        "boxoffice"
+      ],
+      "endDate": "2025-12-02T21:07:56.855941Z",
+      "bestBid": 0.35,
+      "bestAsk": 0.37,
+      "oneDayPriceChange": 0.01,
+      "volume24hr": 21000,
+      "liquidityNum": 55,
+      "enableOrderBook": true
+    }
+  ]
+}

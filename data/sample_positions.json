@@ -1,0 +1,41 @@
+{
+  "data": [
+    {
+      "wallet": "0xDEMO",
+      "conditionId": "0xcondDEMO1",
+      "outcomeIndex": 1,
+      "size": 120,
+      "avgPrice": 0.32,
+      "currentValue": 150,
+      "cashPnl": 30,
+      "percentPnl": 0.25,
+      "endDate": "2025-09-19T21:07:56.854455Z",
+      "slug": "demo-market-1",
+      "title": "Will BTC close above $70k this month?",
+      "category": "Crypto",
+      "tags": [
+        "btc",
+        "price",
+        "monthly"
+      ]
+    },
+    {
+      "wallet": "0xDEMO",
+      "conditionId": "0xcondDEMO2",
+      "outcomeIndex": 0,
+      "size": 80,
+      "avgPrice": 0.18,
+      "currentValue": 60,
+      "cashPnl": -10,
+      "percentPnl": -0.14,
+      "endDate": "2025-09-10T21:07:56.854474Z",
+      "slug": "demo-market-2",
+      "title": "Will Team X win on Sunday?",
+      "category": "Sports",
+      "tags": [
+        "football",
+        "weekly"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "type": "trade",
+      "side": "BUY",
+      "price": 0.32,
+      "size": 120,
+      "usdcSize": 38.4,
+      "outcomeIndex": 1,
+      "timestamp": "2025-08-26T21:07:56.855032Z",
+      "marketEndDate": "2025-09-19T21:07:56.855047Z",
+      "proxyWallet": "0xPROXYDEMO"
+    },
+    {
+      "type": "trade",
+      "side": "BUY",
+      "price": 0.18,
+      "size": 80,
+      "usdcSize": 14.4,
+      "outcomeIndex": 0,
+      "timestamp": "2025-09-02T21:07:56.855051Z",
+      "marketEndDate": "2025-09-10T21:07:56.855054Z",
+      "proxyWallet": "0xPROXYDEMO"
+    }
+  ]
+}

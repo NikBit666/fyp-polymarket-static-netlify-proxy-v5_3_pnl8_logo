@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FYP for Polymarket — CORS-safe v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0c10; --card:#111216; --muted:#9aa3af; --accent:#16a34a; --warn:#f59e0b; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; background: var(--bg); color: #e5e7eb; }
+    .card { background: var(--card); border: 1px solid rgba(255,255,255,0.06); }
+    .chip { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+    .pill { background: rgba(22,163,74,0.12); border: 1px solid rgba(22,163,74,0.35); color: #a7f3d0; }
+    .muted { color: var(--muted); }
+    .glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+    .live { background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245,158,11,0.35); color: #fde68a; }
+    .link { color: #93c5fd; }
+    .link:hover { text-decoration: underline; }
+    .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06)); background-size:200% 100%; animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { 0%{background-position:0% 0%} 100%{background-position:-200% 0%} }
+    .fade { transition: opacity .25s ease, transform .25s ease; }
+  </style>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+</head>
+<body>
+  <header class="px-4 sm:px-8 py-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="./assets/logo.svg" alt="FYP" class="w-8 h-8">
+        <div class="flex items-center gap-3"><img src="img/logo.png" alt="Logo" class="h-10 w-10 rounded-lg object-contain shadow-md"/><h1 class="text-xl font-semibold">FYP for Polymarket</h1></div>
+        <span class="text-xs sm:text-sm px-2 py-1 rounded chip">no-login • read-only • CORS-safe</span>
+      </div>
+      <a class="link text-sm" href="https://docs.polymarket.com" target="_blank" rel="noreferrer">Polymarket Docs</a>
+    </div>
+  </header>
+
+  <main class="px-4 sm:px-8 pb-24">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Inputs + Profile -->
+      <section class="lg:col-span-1 space-y-4">
+        <div class="card rounded-2xl p-4 sm:p-5">
+          <h2 class="font-semibold text-lg mb-3">1) Enter wallet</h2>
+          <div class="space-y-3">
+            <input id="walletInput" class="w-full rounded-xl px-3 py-2 bg-transparent border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/10" placeholder="0xabc... or proxy wallet">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <input id="liveToggle" type="checkbox" class="accent-green-500">
+                <label for="liveToggle" class="text-sm">Live updates (WebSocket)</label>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="mockToggle" type="checkbox" class="accent-green-500">
+                <label for="mockToggle" class="text-sm">Demo mode</label>
+              </div>
+            </div>
+            <button id="seeFeedBtn" class="w-full rounded-xl bg-emerald-500/90 hover:bg-emerald-500 text-black font-semibold py-2">See my For You feed</button>
+            <p id="inputError" class="text-sm text-red-300 hidden">Invalid address. Please paste a 0x... wallet.</p>
+          </div>
+          <p class="text-xs muted mt-3">Tip: If you trade via a proxy wallet, entering either your EOA or the proxy should work — we try to resolve automatically.</p>
+        </div>
+
+        <div id="profileCard" class="card rounded-2xl p-4 sm:p-5 hidden">
+          <h2 class="font-semibold text-lg mb-3">Profile</h2>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="glass rounded-xl p-3">
+              <div class="muted text-xs">Portfolio</div>
+              <div id="bankroll" class="text-lg font-semibold">—</div>
+            </div>
+            <div class="glass rounded-xl p-3">
+              <div class="muted text-xs">PnL (overall)</div>
+              <div id="pnl" class="text-lg font-semibold">—</div>
+            </div>
+            <div class="glass rounded-xl p-3 col-span-2">
+              <div class="muted text-xs">Detected proxy</div>
+              <div id="proxyDisp" class="text-sm font-mono break-all">—</div>
+              <div class="mt-2 flex gap-2 items-center">
+                <input id="proxyOverride" class="flex-1 rounded-xl px-2 py-1 bg-transparent border border-white/10 text-xs" placeholder="paste proxy 0x... (optional)"/>
+                <button id="applyProxy" class="chip px-2 py-1 rounded-lg text-xs">Use</button>
+              </div>
+            </div>
+            <div class="glass rounded-xl p-3 col-span-2">
+              <div class="muted text-xs mb-1">Top categories</div>
+              <div id="topCats" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="glass rounded-xl p-3 col-span-2">
+              <div class="muted text-xs">Detected proxy</div>
+              <div id="proxyDisp" class="text-sm font-mono break-all">—</div>
+              <div class="mt-2 flex gap-2 items-center">
+                <input id="proxyOverride" class="flex-1 rounded-xl px-2 py-1 bg-transparent border border-white/10 text-xs" placeholder="paste proxy 0x... (optional)"/>
+                <button id="applyProxy" class="chip px-2 py-1 rounded-lg text-xs">Use</button>
+              </div>
+            </div>
+            <div class="glass rounded-xl p-3 col-span-2">
+              <div class="muted text-xs mb-1">Top tags</div>
+              <div id="topTags" class="flex flex-wrap gap-2"></div>
+              <div id="historyNote" class="muted text-xs mt-2"></div>
+              <div id="matchNote" class="muted text-xs mt-1" title="Features computed from top 100 positions by value"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="diagBox" class="card rounded-2xl p-4 sm:p-5 hidden">
+          <h2 class="font-semibold text-lg mb-2">Diagnostics</h2>
+          <div class="text-xs space-y-1">
+            <div>Value URL: <span id="diagValueUrl" class="font-mono"></span></div>
+            <div>Value ok: <span id="diagValueOk">—</span></div>
+            <div>Positions ok: <span id="diagPosOk">—</span></div>
+            <div>Activity ok: <span id="diagActOk">—</span></div>
+            <div>Portfolio display: <span id="diagPortfolioShown">—</span></div>
+            <details class="mt-2"><summary class="cursor-pointer">Raw /value</summary><pre id="diagValueRaw" class="whitespace-pre-wrap"></pre></details>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 sm:p-5">
+          <h2 class="font-semibold text-lg mb-3">Filters</h2>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <label class="muted text-xs">Category</label>
+              <select id="filterCategory" class="w-full rounded-xl px-2 py-2 bg-transparent border border-white/10">
+                <option value="">Any</option>
+                <option>Politics</option>
+                <option>Crypto</option>
+                <option>Sports</option>
+                <option>Tech</option>
+                <option>Entertainment</option>
+              </select>
+            </div>
+            <div>
+              <label class="muted text-xs">Horizon</label>
+              <select id="filterHorizon" class="w-full rounded-xl px-2 py-2 bg-transparent border border-white/10">
+                <option value="">Any</option>
+                <option value="short">≤ 7d</option>
+                <option value="medium">8–45d</option>
+                <option value="long">> 45d</option>
+              </select>
+            </div>
+            <div>
+              <label class="muted text-xs">Min liquidity</label>
+              <select id="filterLiquidity" class="w-full rounded-xl px-2 py-2 bg-transparent border border-white/10">
+                <option value="0">No min</option>
+                <option value="3">Decile ≥ 3</option>
+                <option value="5">Decile ≥ 5</option>
+                <option value="7">Decile ≥ 7</option>
+                <option value="9">Decile ≥ 9</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button id="applyFilters" class="w-full rounded-xl glass hover:bg-white/10 py-2">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="diagBox" class="card rounded-2xl p-4 sm:p-5 hidden">
+          <h2 class="font-semibold text-lg mb-2">Diagnostics</h2>
+          <div class="text-xs space-y-1">
+            <div>Value URL: <span id="diagValueUrl" class="font-mono"></span></div>
+            <div>Value ok: <span id="diagValueOk">—</span></div>
+            <div>Positions ok: <span id="diagPosOk">—</span></div>
+            <div>Activity ok: <span id="diagActOk">—</span></div>
+            <div>Portfolio display: <span id="diagPortfolioShown">—</span></div>
+            <details class="mt-2"><summary class="cursor-pointer">Raw /value</summary><pre id="diagValueRaw" class="whitespace-pre-wrap"></pre></details>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 sm:p-5">
+          <h2 class="font-semibold text-lg mb-2">About</h2>
+          <p class="text-sm muted">This is a read-only demo that pulls public data from Polymarket’s Gamma and Data APIs from your browser. No keys. No signup. Recommendations are informational and not financial advice.</p>
+        </div>
+      </section>
+
+      <!-- Right: Feed -->
+      <section class="lg:col-span-2 space-y-4">
+        <div id="statusBar" class="hidden rounded-2xl p-3 glass text-sm flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="statusDot" class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+            <span id="statusText">Connecting…</span>
+          </div>
+          <div id="statusExtra" class="muted"></div>
+        </div>
+
+        <div id="feed" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Cards injected here -->
+        </div>
+
+        <template id="cardTemplate">
+          <article class="card rounded-2xl p-4 sm:p-5 fade">
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1">
+                <a class="text-base sm:text-lg font-semibold link" target="_blank" rel="noreferrer"></a>
+                <div class="flex flex-wrap gap-2 text-xs"></div>
+              </div>
+              <div class="text-right">
+                <div class="pill inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold"><span class="price-mid">—</span></div>
+                <div class="muted text-xs mt-1">bid <span class="price-bid">—</span> | ask <span class="price-ask">—</span></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-sm">
+              <div class="muted">Ends in <span class="ends-in">—</span></div>
+              <div class="muted">24h vol <span class="vol24h">—</span></div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-3 text-xs reasons"></div>
+            <div class="flex items-center gap-2 mt-3">
+              <span class="hidden live badge live rounded-lg px-2 py-1 text-xs">LIVE</span>
+              <span class="muted text-xs last-updated"></span>
+            </div>
+          </article>
+        </template>
+
+        <div id="emptyState" class="hidden text-center muted">
+          <p>No recommendations yet. Try demo mode or adjust filters.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="px-4 sm:px-8 py-10">
+    <div class="max-w-6xl mx-auto text-xs muted">
+      <p>Not affiliated with Polymarket. Built for demonstration and educational purposes. No financial advice.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

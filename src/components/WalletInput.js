@@ -31,10 +31,10 @@ export function WalletInput() {
       </div>
       
       <p class="text-xs text-muted mt-4">
-        <strong>⚠️ CORS Limitation:</strong> Browser security blocks direct API calls to Polymarket. 
-        Check browser console for API attempt details. Currently showing sample data for demo.
+        <strong>⚠️ CORS Notice:</strong> Browser security may block direct API calls to Polymarket. 
+        The app will attempt real API calls and fallback to sample data if blocked.
         <br><br>
-        <strong>💡 For production:</strong> This would need a backend proxy server to bypass CORS restrictions.
+        <strong>💡 Tip:</strong> Check browser console to see which data sources are being used.
       </p>
     </div>
   `

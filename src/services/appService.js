@@ -71,7 +71,7 @@ class AppService {
       return
     }
 
-    this.setStatus('loading', 'Fetching your data…')
+    this.setStatus('loading', 'Fetching data (may use samples due to CORS)…')
 
     try {
       let positions, activity, value, markets
@@ -85,9 +85,11 @@ class AppService {
           apiService.getSampleMarkets(),
         ])
         this.state.wallet = '0xDEMO...'
+        console.log('📊 Using demo data')
       } else {
-        // Real API calls - simplified like original working version
+        // Try real API calls, fallback to samples on CORS
         this.state.wallet = addr
+        console.log('🔍 Attempting real API calls for:', addr)
         
         // 1) Always try activity first to find proxy
         const activityTmp = await apiService.getActivity(addr, 1000)
@@ -111,6 +113,7 @@ class AppService {
         
         if (foundProxy && foundProxy.toLowerCase() !== addr.toLowerCase()) {
           this.state.proxy = foundProxy
+          console.log('🔍 Found proxy:', foundProxy)
         }
         
         positions = foundPositions || await apiService.getPositions(this.state.proxy || addr)
@@ -126,20 +129,29 @@ class AppService {
       // Extract features
       const features = rankerService.buildUserFeatures(positions, activity)
       this.state.features = features
+      console.log('📈 Extracted features:', features)
 
       // Update profile UI
       this.updateProfile(value, features, positions, activity)
 
       // Rank markets
       const raw = (markets?.data || markets || [])
+      console.log('🎯 Processing markets:', raw.length)
+      
       // Normalize tags like original
       raw.forEach(m => { 
         m.tags = this.normTags(m.tags) 
       })
       this.state.markets = raw.filter(m => m?.endDate && m?.question)
+      console.log('✅ Valid markets after filtering:', this.state.markets.length)
       
       const scored = rankerService.scoreMarkets(this.state.markets, features)
       this.state.recs = scored.slice(0, 24)
+      console.log('🏆 Top recommendations:', this.state.recs.slice(0, 3).map(r => ({
+        question: r.market.question,
+        score: r.score,
+        category: r.market.category
+      })))
 
       // Render feed
       this.renderFeed()
@@ -147,7 +159,7 @@ class AppService {
       this.clearStatus()
     } catch (error) {
       console.error('Error fetching data:', error)
-      this.setStatus('error', 'Failed to fetch data. Try Demo mode.')
+      this.setStatus('error', 'CORS blocked APIs. Using sample data. Try Demo mode for full experience.')
     }
   }
 

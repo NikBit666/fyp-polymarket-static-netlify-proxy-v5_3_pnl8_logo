@@ -11,8 +11,8 @@ app.use(cors());
 // Serve static files from current directory
 app.use(express.static('.'));
 
-// Handle SPA routing - serve index.html for all non-API routes
-app.get('/*', (req, res) => {
+// Handle SPA routing - serve index.html for all routes
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
